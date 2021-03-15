@@ -14,7 +14,7 @@ output:
 # Package Loading
 ```{r package, message=FALSE}
 require(devtools)
-install_github('entroPD', 'jmbatto')
+install_github('jmbatto/entroPD')
 require(entroPD)
 ```
 
@@ -24,7 +24,8 @@ require(entroPD)
 
 ## Data Import
 ```{r load, echo=FALSE}
-load('./data/data_adult.Rdata')
+## load('./data/data_adult.Rdata')
+load(url("https://github.com/jmbatto/entroPD/blob/master/data/data_adult.RData?raw=true"))
 ```
 
 ```{r data}
