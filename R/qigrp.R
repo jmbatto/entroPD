@@ -26,7 +26,7 @@ qigrp <- function(dat, obj, mcs = 4, ...){
                             function(x) is.numeric(data.QI.GH[, x])))
   
   #### QI grouping
-  data.QI.GH.res <- mclapply(1:length(obj), function(x){
+  data.QI.GH.res <- lapply(1:length(obj), function(x){
     for(i in 1:length(qi.class)){
       
       # CASE I : Numeric QI
