@@ -20,15 +20,17 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
   # mc : if TRUE (use mclapply), FALSE (default, use lapply)
   
   # 필요 패키지 불러오기
+  # Load required packages 
   require(rpart)
   # Recursive Partitioning and Regression Trees
   require(pbapply)
   # Adding Progress Bar to '*apply' Functions
   
   # mclapply.hack.R sourcing
-  source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
   
   # `parda`에서 return된 object의 attr을 가져옴
+  # Get attr of object returned from `parda` 
   ta <- attr(dat, 'TA') # TA
   qi <- attr(dat, 'QI') # QI
   
@@ -36,17 +38,21 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
   if(mc == FALSE){
     # rpart result by cp by QI 
     # cp값 마다 function 수행
+    # Execute a function for each cp value 
     cp.res <- pblapply(cp, function(x){
       # qi 마다 function 수행
+      # Execute a function every qi 
       pblapply(qi,
                function(var){
                  # Formula
                  Fmla <- as.formula(paste(ta, '~', var))
                  
                  # factor level에 따라서 rpart를 통해 classing을 할 것인지 말 것인지 판단
+                 # Determine whether to do classing or not through rpart according to the factor level 
                  # QI factor level >= 5 
                  if(nlevels(as.factor(dat[, var])) >= 5){
                    # rpart 함수 적용하여 QI classing 수행
+                   # QI classing by applying the rpart function 
                    rpart(Fmla,
                          data = dat,
                          method = 'class',
@@ -57,6 +63,7 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
                  else {'None'}
                  # QI factor level < 5
                  # 이 때는 'None'이라고 결과값을 리턴
+                 # In this case, the result value is returned as 'None'. 
                })
     })
   }
@@ -73,9 +80,11 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
                  Fmla <- as.formula(paste(ta, '~', var))
                  
                  # factor level에 따라서 rpart를 통해 classing을 할 것인지 말 것인지 판단
+                 # Determine whether to do classing or not through rpart according to the factor level 
                  # QI factor level >= 5
                  if(nlevels(as.factor(dat[, var])) >= 5){
                    # rpart 함수 적용하여 QI classing 수행
+                   # QI classing by applying the rpart function 
                    rpart(Fmla,
                          data = dat,
                          method = 'class',
@@ -86,6 +95,7 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
                  else {'None'}
                  # QI factor level < 5
                  # 이 때는 'None'이라고 결과값을 리턴
+                 # In this case, the result value is returned as 'None'. 
                })
     })
   }
@@ -97,8 +107,8 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
   attr(cp.res, 'n') <- attr(dat, 'nobs') # nobs.
   attr(cp.res, 'cp') <- cp # cp values
   attr(cp.res, 'QI') <- qi # QI
-  attr(cp.res, 'nQI') <- attr(dat, 'nQI') # QI 갯수
-  attr(cp.res, 'ncp') <- attr(cp, 'ncp') # cp값 갯수
+  attr(cp.res, 'nQI') <- attr(dat, 'nQI') # QI 갯수 # number of QI
+  attr(cp.res, 'ncp') <- attr(cp, 'ncp') # cp값 갯수 # number of cp values 
   
   return(cp.res)
 }
@@ -124,7 +134,7 @@ lanode <- function(obj, mc = FALSE, ...){
   # Adding Progress Bar to '*apply' Functions
   
   # mclapply.hack.R sourcing
-  source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
   
   
   qi <- attr(obj, 'QI')
@@ -134,14 +144,18 @@ lanode <- function(obj, mc = FALSE, ...){
   
   
   # cp값에 따른 QI별로 가능한 조합 수
+  # Number of possible combinations for each QI according to the cp value 
   # cp값 개수 ^ QI 개수
+  # number of cp values ^ number of QIs 
   lattice.pairs <- expand.grid(rep(list(seq_len(n.cp)), n.qi))
   # expand.grid : Create a Data Frame from All Combinations of Factors
   
   lattice.node <- list()
   # 비어있는 list를 만듦
+  # Create an empty list
   length(lattice.node) <- nrow(lattice.pairs)
   # list의 length를 lattice.pairs의 nrow로 지정
+  # Specify the length of the list as nrow of lattice.pairs 
   
   # lapply (mc = FALSE)
   if(mc == FALSE){
@@ -154,27 +168,27 @@ lanode <- function(obj, mc = FALSE, ...){
   
   # mclapply (mc = TRUE)
   if(mc == TRUE){
-    lattice.node <- mclapply(seq_len(nrow(lattice.pairs)), function(lat){
-      mclapply(seq_len(ncol(lattice.pairs)), function(no){
+    lattice.node <- lapply(seq_len(nrow(lattice.pairs)), function(lat){
+      lapply(seq_len(ncol(lattice.pairs)), function(no){
         ind <- lattice.pairs[lat, no]
         obj[[ind]][[no]]
-      }, num = mcs)
+      })
       
     })    
   }
   
-  # class 지정
+  # class 지정 # class designation 
   class(lattice.node) <- c('lanode', 'list')
   
   attr(lattice.node, 'lattice_pairs') <- lattice.pairs
   # lattice node의 generalization hierarchy
   
-  # Attributes 추가
+  # Attributes 추가 
   attr(lattice.node, 'QI') <- qi # QI
   attr(lattice.node, 'cp') <- cp # cp values
   attr(lattice.node, 'nQI') <- attr(obj, 'nQI') # QI 갯수
-  attr(lattice.node, 'ncp') <- attr(obj, 'ncp') # cp 값의 갯수
-  attr(lattice.node, 'nnode') <- length(lattice.node) # lattice node의 갯수
+  attr(lattice.node, 'ncp') <- attr(obj, 'ncp') # cp 값의 갯수 
+  attr(lattice.node, 'nnode') <- length(lattice.node) # lattice node의 갯수 # number of lattice nodes 
   
   return(lattice.node)
 }
