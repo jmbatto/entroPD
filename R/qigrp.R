@@ -14,7 +14,7 @@ qigrp <- function(dat, obj, mcs = 4, ...){
   require(mgcv) ## uniquecombs() : find the unique rows in a matrix
   
   # mclapply.hack.R sourcing
-  source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
   
   # Data to be grouped
   data.QI.GH <- dat
@@ -36,12 +36,15 @@ qigrp <- function(dat, obj, mcs = 4, ...){
         if(class(obj[[x]][[i]]) == 'rpart' && class(obj[[x]][[i]]$splits) == 'matrix'){
           split.point <- obj[[x]][[i]]$splits[, 4]
           # rpart object의 splits value를 통해 classing되는 구간을 찾음
+          # Finds the section that is classed through the splits value of the rpart object. 
           data.QI.GH[, i] <- cut(data.QI.GH[, i], c(0, split.point, Inf))
           # cut() function을 통해 위에 split.point 결과를 가지고 grouping
+          # Grouping with the result of split.point above through cut() function 
         }
         
         # rpart result : NOT ("None", "root[1]")
         # 특히, `root[1]`로 나타나는 경우에는 TA에 대한 설명력이 없다는 의미임
+        # In particular, if it appears as `root[1]`, it means that there is no explanatory power for TA. 
         else{
           data.QI.GH[, i] <- as.numeric(data.QI.GH[, i])
         }
@@ -57,6 +60,7 @@ qigrp <- function(dat, obj, mcs = 4, ...){
           
           split.point <- t(obj[[x]][[i]]$csplit) 
           # terminal node로 향하는 split 방향에 대한 matrix
+          # Matrix for the split direction towards the terminal node 
           grp.mat <- uniquecombs(split.point) # terminal node
           grp.ind <- attr(grp.mat, 'index') # terminal node index
           
