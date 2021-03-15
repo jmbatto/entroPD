@@ -62,14 +62,19 @@ cpselec <- function(n = 10, len = 100, m = 2, ...){
   # cp값을 랜덤하게 뽑는 과정
   cp.vec <- unlist(lapply(seq_len(n), function(x){
     # uniform 분포를 이용하여 0부터 10^-x까지의 구간을 len개 생성
+    # Generate len intervals from 0 to 10^-x using uniform distribution 
     # 구간은 n개가 생성이 됨
+    # N sections are created 
     rx <- runif(n = len, min = 0, max = 10^-x)
     # 각 구간마다 1개를 랜덤하게 추출
+    # Randomly extract 1 for each section 
     sample(rx, size = 1)
   }))
   # 각 구간별 (n개의 구간) (으)로 1개씩 생성해서 n개의 cp값을 리턴
+  # For each section (n sections), one by one is generated and n number of cp values are returned. 
   
   # 위에서 뽑은 cp값에 대해서 m개의 cp값을 임의로 추출
+  # Randomly extract m cp values for the cp values selected above 
   cp.val <- sample(cp.vec, size = m)
   
   class(cp.val) <- class('cpselec')
@@ -108,9 +113,10 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
   # Adding Progress Bar to '*apply' Functions
   
   # mclapply.hack.R sourcing
-  source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
   
   # `parda`에서 return된 object의 attr을 가져옴
+  # Get attr of object returned from `parda` 
   ta <- attr(dat, 'TA') # TA
   qi <- attr(dat, 'QI') # QI
   
@@ -203,7 +209,7 @@ lanode <- function(obj, mc = FALSE, ...){
   # Adding Progress Bar to '*apply' Functions
   
   # mclapply.hack.R sourcing
-  source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
   
   
   qi <- attr(obj, 'QI')
@@ -213,7 +219,9 @@ lanode <- function(obj, mc = FALSE, ...){
   
   
   # cp값에 따른 QI별로 가능한 조합 수
+  # Number of possible combinations for each QI according to the cp value 
   # cp값 개수 ^ QI 개수
+  # number of cp values ^ number of QIs 
   lattice.pairs <- expand.grid(rep(list(seq_len(n.cp)), n.qi))
   # expand.grid : Create a Data Frame from All Combinations of Factors
   
@@ -221,6 +229,7 @@ lanode <- function(obj, mc = FALSE, ...){
   # 비어있는 list를 만듦
   length(lattice.node) <- nrow(lattice.pairs)
   # list의 length를 lattice.pairs의 nrow로 지정
+  # Specify the length of the list as nrow of lattice.pairs 
   
   # lapply (mc = FALSE)
   if(mc == FALSE){
@@ -233,11 +242,11 @@ lanode <- function(obj, mc = FALSE, ...){
   
   # mclapply (mc = TRUE)
   if(mc == TRUE){
-    lattice.node <- mclapply(seq_len(nrow(lattice.pairs)), function(lat){
-      mclapply(seq_len(ncol(lattice.pairs)), function(no){
+    lattice.node <- lapply(seq_len(nrow(lattice.pairs)), function(lat){
+      lapply(seq_len(ncol(lattice.pairs)), function(no){
         ind <- lattice.pairs[lat, no]
         obj[[ind]][[no]]
-      }, num = mcs)
+      })
       
     })    
   }
@@ -275,7 +284,7 @@ qigrp <- function(dat, obj, mcs = 4, ...){
   require(mgcv) ## uniquecombs() : find the unique rows in a matrix
   
   # mclapply.hack.R sourcing
-  source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
   
   # Data to be grouped
   data.QI.GH <- dat
@@ -297,12 +306,15 @@ qigrp <- function(dat, obj, mcs = 4, ...){
         if(class(obj[[x]][[i]]) == 'rpart' && class(obj[[x]][[i]]$splits) == 'matrix'){
           split.point <- obj[[x]][[i]]$splits[, 4]
           # rpart object의 splits value를 통해 classing되는 구간을 찾음
+          # Finds the section that is classed through the splits value of the rpart object.
           data.QI.GH[, i] <- cut(data.QI.GH[, i], c(0, split.point, Inf))
           # cut() function을 통해 위에 split.point 결과를 가지고 grouping
+          # Grouping with the result of split.point above through cut() function 
         }
         
         # rpart result : NOT ("None", "root[1]")
         # 특히, `root[1]`로 나타나는 경우에는 TA에 대한 설명력이 없다는 의미임
+        # In particular, if it appears as `root[1]`, it means that there is no explanatory power for TA. 
         else{
           data.QI.GH[, i] <- as.numeric(data.QI.GH[, i])
         }
@@ -318,16 +330,18 @@ qigrp <- function(dat, obj, mcs = 4, ...){
           
           split.point <- t(obj[[x]][[i]]$csplit) 
           # terminal node로 향하는 split 방향에 대한 matrix
+          # Matrix for the split direction towards the terminal node 
           grp.mat <- uniquecombs(split.point) # terminal node
           grp.ind <- attr(grp.mat, 'index') # terminal node index
           
-          grp.ind.nlevels <- nrow(grp.mat) # terminal node level 갯수
+          grp.ind.nlevels <- nrow(grp.mat) # terminal node level 갯수 # number of terminal node levels 
           grp.ind.levels <- levels(as.factor(grp.ind)) # terminal node factor level
           
           # grouping levels
           dat.levels <- levels(as.factor(data.QI.GH[, i]))
           
           # 위 결과에 의해 factor level의 QI를 grouping하는 과정
+          # The process of grouping the factor level QI based on the above result 
           for(j in 1:grp.ind.nlevels){
             data.QI.GH[data.QI.GH[, i] %in% dat.levels[grp.ind == j], i] <- j
           }
@@ -351,7 +365,7 @@ qigrp <- function(dat, obj, mcs = 4, ...){
   # attributes 추가
   attr(data.QI.GH.res, 'QI') <- attr(obj, 'QI') # QI
   attr(data.QI.GH.res, 'cp') <- attr(obj, 'cp') # cp values
-  attr(data.QI.GH.res, 'nnode') <- attr(obj, 'nnode') # 노드의 갯수
+  attr(data.QI.GH.res, 'nnode') <- attr(obj, 'nnode') # 노드의 갯수 # Number of nodes 
   
   return(data.QI.GH.res)
 }
