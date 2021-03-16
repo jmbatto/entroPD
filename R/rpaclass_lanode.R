@@ -74,7 +74,7 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
     # cp값 마다 function 수행
     cp.res <- mclapply(cp, function(x){
       # qi 마다 function 수행
-      mclapply(qi,
+      lapply(qi,
                function(var){
                  # Formula
                  Fmla <- as.formula(paste(ta, '~', var))
