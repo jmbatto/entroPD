@@ -113,6 +113,108 @@ rpaclass <- function(dat, cp = 0.01, loss.mat = matrix(c(0,1,2,0), ncol=2), cval
   return(cp.res)
 }
 
+# rpaclassforc function ---
+rpaclassforce <- function(dat, cp = 0.01, leaf.k = 5, cval=10, mc = FALSE, ...){
+  # Description : QI classing by cp
+  #
+  # Arguments
+  # dat : parda Data Object
+  # cp : cp value (matrix) - results of `cpselec`
+  # loss.mat : loss matrix
+  # cval : # of cross-validation
+  # mc : if TRUE (use mclapply), FALSE (default, use lapply)
+  
+  # 필요 패키지 불러오기
+  # Load required packages 
+  require(rpart)
+  # Recursive Partitioning and Regression Trees
+  require(pbapply)
+  # Adding Progress Bar to '*apply' Functions
+  
+  # mclapply.hack.R sourcing
+  # source('http://www.stat.cmu.edu/~nmv/setup/mclapply.hack.R')
+  
+  # `parda`에서 return된 object의 attr을 가져옴
+  # Get attr of object returned from `parda` 
+  ta <- attr(dat, 'TA') # TA
+  qi <- attr(dat, 'QI') # QI
+  
+  # lapply (mc = FALSE)
+  if(mc == FALSE){
+    # rpart result by cp by QI 
+    # cp값 마다 function 수행
+    # Execute a function for each cp value 
+    cp.res <- pblapply(cp, function(x){
+      # qi 마다 function 수행
+      # Execute a function every qi 
+      pblapply(qi,
+               function(var){
+                 # Formula
+                 Fmla <- as.formula(paste(ta, '~', var))
+                 
+                 # factor level에 따라서 rpart를 통해 classing을 할 것인지 말 것인지 판단
+                 # Determine whether to do classing or not through rpart according to the factor level 
+                 # QI factor level >= 5 
+                 if(nlevels(as.factor(dat[, var])) >= 5){
+                   # rpart 함수 적용하여 QI classing 수행
+                   # QI classing by applying the rpart function 
+                   rpart(Fmla,
+                         data = dat,
+                         method = 'class',
+                         control = rpart.control(minsplit = leaf.k ,cp = x))
+                 }
+                 
+                 else {'None'}
+                 # QI factor level < 5
+                 # 이 때는 'None'이라고 결과값을 리턴
+                 # In this case, the result value is returned as 'None'. 
+               })
+    })
+  }
+  
+  # mclapply (mc = TRUE)
+  if(mc == TRUE){
+    # rpart result by cp by QI
+    # cp값 마다 function 수행
+    cp.res <- mclapply(cp, function(x){
+      # qi 마다 function 수행
+      lapply(qi,
+               function(var){
+                 # Formula
+                 Fmla <- as.formula(paste(ta, '~', var))
+                 
+                 # factor level에 따라서 rpart를 통해 classing을 할 것인지 말 것인지 판단
+                 # Determine whether to do classing or not through rpart according to the factor level 
+                 # QI factor level >= 5
+                 if(nlevels(as.factor(dat[, var])) >= 5){
+                   # rpart 함수 적용하여 QI classing 수행
+                   # QI classing by applying the rpart function 
+                   rpart(Fmla,
+                         data = dat,
+                         method = 'class',
+                         control = rpart.control(minsplit = leaf.k ,cp = x))
+                 }
+                 
+                 else {'None'}
+                 # QI factor level < 5
+                 # 이 때는 'None'이라고 결과값을 리턴
+                 # In this case, the result value is returned as 'None'. 
+               })
+    })
+  }
+  
+  class(cp.res) <- c('rpaclassforce', 'list')
+  
+  # Attributes 추가
+  attr(cp.res, 'Call') <- match.call()
+  attr(cp.res, 'n') <- attr(dat, 'nobs') # nobs.
+  attr(cp.res, 'cp') <- cp # cp values
+  attr(cp.res, 'QI') <- qi # QI
+  attr(cp.res, 'nQI') <- attr(dat, 'nQI') # QI 갯수 # number of QI
+  attr(cp.res, 'ncp') <- attr(cp, 'ncp') # cp값 갯수 # number of cp values 
+  
+  return(cp.res)
+}
 
 
 # lanode function ----------------------------------------
